@@ -3,7 +3,7 @@
 This repository contains the official implementation for the following paper on demand response program:
 
 
-* [A Distributed Optimization Framework to Regulate the Electricity Consumption of a Residential Neighborhood](https://arxiv.org/abs/2306.10935](https://arxiv.org/abs/2306.09954)
+* [A Distributed Optimization Framework to Regulate the Electricity Consumption of a Residential Neighborhood](https://arxiv.org/abs/2306.09954)
 
 
 This paper proposes a distributed demand response program to control the overall load consumption of a residential neighborhood. The complexity of the proposed problem grows as the number of participating homes increases. To be able to solve the proposed problem efficiently, we develop a distributed optimization framework based on Dantzig-Wolfe decomposition approach. We show the benefits of utilizing our optimization approach over solving the centralized problem using a commercial solver by conducting various experiments in a simulated environment.
