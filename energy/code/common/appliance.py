@@ -9,6 +9,7 @@ def get_temperature(s_effect):
     #temperature=pd.read_csv('/Users/can/Desktop/energy/code/solar_data/boston/2784951_42.38_-71.13_2018.csv')
     #temperature=pd.read_csv('/home/erhan/energy_data/2784951_42.38_-71.13_2018.csv')
     #temperature=pd.read_csv('/home/erhan/energy_milp_github/energy/weather_data/2784951_42.38_-71.13_2018.csv')
+    #temperature=pd.read_csv('/home/erhan/energy-MILP/energy/weather_data/2784951_42.38_-71.13_2018.csv')
     temperature=pd.read_csv('/Users/can/Documents/GitHub/energy-MILP/energy/weather_data/2784951_42.38_-71.13_2018.csv')
     temperature=temperature.iloc[:,[8]]
     temperature.columns=np.array(["temperature"])
