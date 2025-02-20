@@ -4,11 +4,11 @@ import numpy as np
 #A Computational Study of Dantzig-Wolfe Decomposition
 class restricted_master:
     
-    def __init__(self,num_homes,horizon,Q,D_P,D_d_list):
+    def __init__(self,num_homes,horizon,Q_modify,D_P,D_d_list):
         
         self.num_homes=num_homes
         self.horizon=horizon
-        self.Q=Q
+        self.Q_modify=Q_modify
         #D_P, and D_d are feature extractors from the extreme point.
         self.D_P=D_P
         self.D_d_list=D_d_list
@@ -41,6 +41,12 @@ class restricted_master:
         
         self.pos=self.prob.addConstrs((self.s[k]-self.a[k]>=0 for k in range(horizon)))
         self.neg=self.prob.addConstrs((self.s[k]+self.a[k]>=0 for k in range(horizon)))
+        
+        self.Q=self.prob.addVars(horizon,lb=0,name="Q")
+        
+        
+        for j in range(horizon-1):
+            self.prob.addConstr(self.Q[j] == self.Q[j+1])
         
         self.objective=[]
         self.iter_num=1
@@ -99,7 +105,7 @@ class restricted_master:
                     
                 ### TO DO you may need to write this loop for an extreme ray!
                 
-                self.prob.addLConstr(LHS, '=', self.Q[k], name="coupling_"+str(k))
+                self.prob.addLConstr(LHS, '=', self.Q[k] - self.Q_modify[k], name="coupling_"+str(k))
                 
                 self.prob.update()  
             

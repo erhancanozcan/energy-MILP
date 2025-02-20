@@ -7,7 +7,7 @@ import copy
 import pickle
 
 import sys
-sys.path.append("/Users/can/Documents/GitHub")
+sys.path.append("/Users/can/Documents/GitHub/energy-MILP")
 
 
 
@@ -109,6 +109,13 @@ def train(inputs_dict):
             for key in dev_c.keys():
                 cumulative_desired_energy+=np.sum(real_c[key])-np.sum(dev_c[key])
         Q=np.repeat((cumulative_desired_energy-generated_PV)/horizon,horizon)
+    
+    #Q_modify= - data.NonACConsumption.values + data.Generation.values
+    if inputs_dict['ca_kwargs']['q_modify_file'] is not None:
+        full_path = os.path.join('./energy/data',inputs_dict['ca_kwargs']['q_modify_file'])
+        Q_modify=np.genfromtxt(full_path, delimiter=',')
+    else:
+        Q_modify = np.zeros(horizon)
     #Information Extractors from extreme points.
     
     #D_P is a matrix of which each row is D_P_(t+k)
@@ -147,7 +154,7 @@ def train(inputs_dict):
         D_d_list.append(cost_modified)
     
     
-    r_m=restricted_master(num_homes,horizon,Q,D_P_list,D_d_list)
+    r_m=restricted_master(num_homes,horizon,Q_modify,D_P_list,D_d_list)
     
 
     
@@ -398,18 +405,26 @@ def train(inputs_dict):
         real_power_list.append(real_power)
         deviation_power_list.append(dev_power)
         home_dev_cost.append(cost_dev)
+    
+    
+    
+    Q_vals=[]
+    for k in range (horizon):
+        Q_vals.append(r_m.Q[k].X)
+    Q_vals = np.array(Q_vals)
         
-    real_power_list=[]
-    deviation_power_list=[]
-    real_power_list_before_changing_price=[]
-    dev_power_list_before_changing_price=[]
+    #real_power_list=[]
+    #deviation_power_list=[]
+    #real_power_list_before_changing_price=[]
+    #dev_power_list_before_changing_price=[]
     
     power_summary={'real_ca':real_power_list,
                    'dev_ca':deviation_power_list,
                    'real_before_changing_price':real_power_list_before_changing_price,
                    'dev_before_changing_price':dev_power_list_before_changing_price,
                    'price_lb': price,
-                   'Q'        : Q,
+                   'Q'        : Q_vals,
+                   'minusNonACplusPVGeneration': Q_modify,
                    'c_a_obj_list':r_m.objective,
                    'c_a_final_obj':r_m.prob.ObjVal,
                    'optimization_time':opt_time,

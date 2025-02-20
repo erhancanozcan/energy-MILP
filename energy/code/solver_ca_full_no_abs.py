@@ -7,7 +7,7 @@ import copy
 import pickle
 
 import sys
-sys.path.append("/Users/can/Documents/GitHub")
+sys.path.append("/Users/can/Documents/GitHub/energy-MILP")
 
 
 
@@ -100,6 +100,14 @@ def train(inputs_dict):
             for key in dev_c.keys():
                 cumulative_desired_energy+=np.sum(real_c[key])-np.sum(dev_c[key])
         Q=np.repeat((cumulative_desired_energy-generated_PV)/horizon,horizon)
+    
+    #Q_modify= - data.NonACConsumption.values + data.Generation.values
+    if inputs_dict['ca_kwargs']['q_modify_file'] is not None:
+        full_path = os.path.join('./energy/data',inputs_dict['ca_kwargs']['q_modify_file'])
+        Q_modify=np.genfromtxt(full_path, delimiter=',')
+    else:
+        Q_modify = np.zeros(horizon)
+    
     ##Coordination Agent Problem Initialization 
     m_c_a=Model("m_c_a")
     #price_e=m_c_a.addVars(horizon,lb=0,name="price")
@@ -293,14 +301,19 @@ def train(inputs_dict):
     #deviation_loss=m_c_a.addVars(horizon,lb=-GRB.INFINITY,ub=GRB.INFINITY,name="dev_loss")
     dev_loss_helper=m_c_a.addVars(horizon,lb=0,name="dev_loss_obj")
     
+    Q=m_c_a.addVars(horizon,lb=0,name="Q")
+    
     #obj_term1=[]#holds the deviation from desired power consumption level.
     for j in range(horizon):
         #obj_term1=Q[j]-quicksum(home_reals[i][t*horizon+j] for i in range(num_homes)for t in range(7))
         
         real_pow_idx_remaining_sel=real_pow_idx_remaining[(real_pow_idx_remaining%horizon)==j]
-        obj_term1=Q[j]-(quicksum(home_reals[i][t] for i in range(num_homes)for t in real_pow_idx_remaining_sel)+\
-                        quicksum(home_reals[i][real_pow_HVAC_idx[j]]*power_HVAC_list[i] for i in range(num_homes)))
+        #obj_term1=Q[j]-(quicksum(home_reals[i][t] for i in range(num_homes)for t in real_pow_idx_remaining_sel)+\
+        #                quicksum(home_reals[i][real_pow_HVAC_idx[j]]*power_HVAC_list[i] for i in range(num_homes)))
                         
+        obj_term1=Q[j] + Q_modify[j] - (quicksum(home_reals[i][t] for i in range(num_homes)for t in real_pow_idx_remaining_sel)+\
+                        quicksum(home_reals[i][real_pow_HVAC_idx[j]]*power_HVAC_list[i] for i in range(num_homes)))
+            
         m_c_a.addConstr(dev_loss_helper[j] >= obj_term1)
         m_c_a.addConstr(dev_loss_helper[j] >= -obj_term1)
 
@@ -314,7 +327,8 @@ def train(inputs_dict):
         obj_term2.append(quicksum(home_devs[i][t]*cost_dev[t] for t in range(len(cost_dev))))
         
     
-    
+    for j in range(horizon-1):
+        m_c_a.addConstr(Q[j] == Q[j+1])
     
     #m_c_a.setObjective(quicksum(dev_loss_helper[i] for i in range(horizon))+\
     #                   quicksum(obj_term2[i] for i in range(num_homes))+\
@@ -422,13 +436,26 @@ def train(inputs_dict):
         desired_power_list.append(des_power)  
         home_dev_cost.append(cost_dev)
     
+    
+    Q_vals=[]
+    for k in range (horizon):
+        Q_vals.append(Q[k].X)
+    Q_vals = np.array(Q_vals)
+    
+    
+    #real_power_list=[]
+    #deviation_power_list=[]
+    #real_power_list_before_changing_price=[]
+    #dev_power_list_before_changing_price=[]
+    
 
     power_summary={'real_ca':real_power_list,
                    'dev_ca':deviation_power_list,
                    'real_before_changing_price':real_power_list_before_changing_price,
                    'dev_before_changing_price':dev_power_list_before_changing_price,
                    'price_lb': price,
-                   'Q'        : Q,
+                   'Q'        : Q_vals,
+                   'minusNonACplusPVGeneration': Q_modify,
                    'optimality_gap':"NA",
                    'c_a_obj_list':c_a_obj_list,
                    'optimization_time':opt_end_time-opt_start_time,
