@@ -18,17 +18,22 @@ parser.add_argument('--save_file',help='save file name',type=str)
 
 
 #Home
-home_kwargs=['s_effect']
+home_kwargs=['s_effect', 'flex_prob','controlled_cost']
 parser.add_argument('--s_effect',help='seasonal effect for HVAC 1 heating minus 1 cooling',type=int,default=-1)
+parser.add_argument('--flex_prob',help='flexibility probability for home',type=float,default=0.0)
+parser.add_argument('--controlled_cost',help='use the controlled deviation cost structure', action='store_true')
 
 #Coordination Agent
-ca_kwargs=['num_houses', 'horizon', 'price', 'Q','q_modify_file','powertobuy','lambda_gap', 'mipgap', 'timelimit','p_ub','iter_limit','opt_tolerance','unused_iter_limit']
+ca_kwargs=['num_houses', 'horizon', 'price', 'deviation_cost', 'Q','uncontrollable_file',
+           'renewable_file','powertobuy','lambda_gap', 'mipgap', 'timelimit','p_ub','iter_limit','opt_tolerance','unused_iter_limit']
 
-parser.add_argument('--num_houses',help='number of houses in the community',type=int,default=10)
+parser.add_argument('--num_houses',help='number of houses in the community',type=int,default=2)
 parser.add_argument('--horizon',help='number of time intervals in next 24 hours',type=int,default=96)
 parser.add_argument('--price',help='mean electricity price Kwh',type=float,default=0.35)
+parser.add_argument('--deviation_cost',help='mean deviation cost',type=float,default=0.01)
 parser.add_argument('--Q',help='desired agregated power level in KwH',type=float,default=-1.0)
-parser.add_argument('--q_modify_file',help='import file name for Q_modify',type=str)
+parser.add_argument('--uncontrollable_file',help='import file name for Q_modify',type=str)
+parser.add_argument('--renewable_file',help='import file name for Q_modify',type=str)
 parser.add_argument('--powertobuy',help='Additioanl Power amount required to maintain a balance between supply and demend. It has to be non-negative float.',type=float,default=10000)
 parser.add_argument('--lambda_gap',help='duality gap penalizer coefficient',type=float,default=1.0)
 parser.add_argument('--mipgap',help='mipgap value of the QCQP problem',type=float,default=1e-4)

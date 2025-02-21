@@ -50,9 +50,12 @@ def train(inputs_dict):
     dev_power_list_before_changing_price=[]
     
     s_effect=inputs_dict['home_kwargs']['s_effect']
+    flex_prob=inputs_dict['home_kwargs']['flex_prob']
+    controlled_cost=inputs_dict['home_kwargs']['controlled_cost']
     num_homes=inputs_dict['ca_kwargs']['num_houses']
     horizon=inputs_dict['ca_kwargs']['horizon']
     mean_price=inputs_dict['ca_kwargs']['price']
+    mean_deviation_cost=inputs_dict['ca_kwargs']['deviation_cost']
     mean_Q=inputs_dict['ca_kwargs']['Q']
     #Q=abs(np.random.normal(mean_Q,10,size=horizon))#Kw supply
     lambda_gap=inputs_dict['ca_kwargs']['lambda_gap']
@@ -67,14 +70,19 @@ def train(inputs_dict):
     
     #Random demand and appliance initialization for each home.
     i=0
+    #num_flexible_homes = 0
     while i<num_homes:
+        # flexible_home = 1
+        # if rng.random() < flex_prob:
+        #     flexible_home = 0
         home=Home(s_effect=s_effect)
         home=initialize_demand(home,rng=rng)
         home=initialize_appliance_property(home,s_effect,rng=rng)
         home.generate_desirable_load()
         
-        assert (horizon == len(home.wm_desirable_load),"Horizon Change is detected. Check Time resolution of appliances")
-        total,cost_u,daily_fee_desirable=home.total_desirable_load(price,mean_price)
+        assert horizon == len(home.wm_desirable_load),"Horizon Change is detected. Check Time resolution of appliances"
+        #total,cost_u,daily_fee_desirable=home.total_desirable_load(price,mean_price,flexible_home,rng,controlled_cost)
+        total,cost_u,daily_fee_desirable=home.total_desirable_load(price,mean_price,rng,controlled_cost,mean_deviation_cost)
         try:
             real_power,dev_power,states,dual,m,p_obj=home.optimize_mpc(cost_u,price)
             i=i+1
@@ -84,6 +92,7 @@ def train(inputs_dict):
             power_HVAC_list.append(home.hvac.nominal_power)
             real_power_list_before_changing_price.append(real_power)
             dev_power_list_before_changing_price.append(dev_power)
+            #num_flexible_homes += flexible_home
         except Exception:
             print("demand was infeasible due to initialization skip this home.")
             pass
@@ -102,11 +111,18 @@ def train(inputs_dict):
         Q=np.repeat((cumulative_desired_energy-generated_PV)/horizon,horizon)
     
     #Q_modify= - data.NonACConsumption.values + data.Generation.values
-    if inputs_dict['ca_kwargs']['q_modify_file'] is not None:
-        full_path = os.path.join('./energy/data',inputs_dict['ca_kwargs']['q_modify_file'])
-        Q_modify=np.genfromtxt(full_path, delimiter=',')
-    else:
-        Q_modify = np.zeros(horizon)
+    Q_modify = np.zeros(horizon)
+    uncontrollable_load = np.zeros(horizon)
+    renewable_load = np.zeros(horizon)
+    if inputs_dict['ca_kwargs']['uncontrollable_file'] is not None:
+        full_path_uncontrollable = os.path.join('./energy/data',inputs_dict['ca_kwargs']['uncontrollable_file'])
+        uncontrollable_load = np.genfromtxt(full_path_uncontrollable, delimiter=',')
+        Q_modify = Q_modify - uncontrollable_load
+    if inputs_dict['ca_kwargs']['renewable_file'] is not None:
+        full_path_renewable = os.path.join('./energy/data',inputs_dict['ca_kwargs']['renewable_file'])
+        renewable_load = np.genfromtxt(full_path_renewable, delimiter=',')
+        Q_modify = Q_modify + renewable_load
+
     
     ##Coordination Agent Problem Initialization 
     m_c_a=Model("m_c_a")
@@ -454,8 +470,12 @@ def train(inputs_dict):
                    'real_before_changing_price':real_power_list_before_changing_price,
                    'dev_before_changing_price':dev_power_list_before_changing_price,
                    'price_lb': price,
+                   'mean_deviation_cost': mean_deviation_cost,
                    'Q'        : Q_vals,
-                   'minusNonACplusPVGeneration': Q_modify,
+                   #'num_flexible_homes': num_flexible_homes,
+                   'q_modify': Q_modify,
+                   'uncontrollable_load': uncontrollable_load,
+                   'renewable_load': renewable_load,
                    'optimality_gap':"NA",
                    'c_a_obj_list':c_a_obj_list,
                    'optimization_time':opt_end_time-opt_start_time,
@@ -521,8 +541,8 @@ def main():
     save_date=datetime.today().strftime('%m%d%y_%H%M%S')
     
     if args.save_file is None:
-        save_file = '%s_%s_%s_%s_%s_%s_%s'%(args.num_houses,args.horizon,
-            args.price,args.Q,args.lambda_gap,args.mipgap,save_date)
+        save_file = '%s_%s_%s_%s_%s_%s'%(args.num_houses,args.horizon,
+            args.price,args.lambda_gap,args.mipgap,save_date)
     else:
         save_file = '%s_%s'%(args.save_file,save_date)
     

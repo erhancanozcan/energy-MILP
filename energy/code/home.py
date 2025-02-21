@@ -97,7 +97,8 @@ class Home:
         self.wm_desirable_load=self.wm.load_curve(self.wm_demand)
         self.dryer_desirable_load=self.dryer.load_curve(self.dryer_demand)
         
-    def total_desirable_load(self,price,normalize):
+    #def total_desirable_load(self,price,normalize,flexible_home,rng,controlled_cost):
+    def total_desirable_load(self,price,normalize,rng,controlled_cost,deviation_cost):
         total=self.ewh_desirable_load+self.ev_desirable_load+\
             self.hvac_desirable_load+self.refrigerator_desirable_load+\
             self.oven_desirable_load+self.wm_desirable_load+\
@@ -142,7 +143,36 @@ class Home:
                     'wm':correction_amount*(total_wm/tmp_total),
                     'dryer':correction_amount*(total_dryer/tmp_total)}
         
-        return total,cost_u,daily_fee
+        
+        
+        # if flexible_home == 0:
+        #     controlled_cost_u={'ewh':1000.0,
+        #             'ev':1000.0,
+        #             'hvac':1000.0,
+        #             'oven':1000.0,
+        #             'wm':1000.0,
+        #             'dryer':1000.0}
+        
+        # else:
+        #     dev_price = abs(rng.normal(loc=0.01, scale=0.005))
+        #     controlled_cost_u={'ewh':dev_price,
+        #             'ev':dev_price,
+        #             'hvac':dev_price,
+        #             'oven':dev_price,
+        #             'wm':dev_price,
+        #             'dryer':dev_price}
+        dev_price = max(0, rng.normal(loc=deviation_cost, scale=0.005))
+        controlled_cost_u={'ewh':dev_price,
+                'ev':dev_price,
+                'hvac':dev_price,
+                'oven':dev_price,
+                'wm':dev_price,
+                'dryer':dev_price}
+        
+        if controlled_cost:
+            return total,controlled_cost_u,daily_fee
+        else:
+            return total,cost_u,daily_fee
             
             
         
