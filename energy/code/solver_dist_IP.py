@@ -86,7 +86,7 @@ def train(inputs_dict):
         
         assert (horizon == len(home.wm_desirable_load),"Horizon Change is detected. Check Time resolution of appliances")
         #total,cost_u,daily_fee_desirable=home.total_desirable_load(price,mean_price,flexible_home,rng,controlled_cost)
-        total,cost_u,daily_fee_desirable=home.total_desirable_load(price,mean_price,rng,controlled_cost)
+        total,cost_u,daily_fee_desirable=home.total_desirable_load(price,mean_price,rng,controlled_cost,mean_deviation_cost)
         try:
             real_power,dev_power,states,dual,m,p_obj=home.optimize_mpc(cost_u,price)
             tmp_p_name="H"+str(i+1)+"_P_"
