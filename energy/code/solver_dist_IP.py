@@ -217,7 +217,8 @@ def train(inputs_dict):
         if iter_counter%10==0:
             print (iter_counter)
         max_time=0
-        lagrangean_dual_tmp=np.dot(np.array(coupling_dual),Q)
+        #lagrangean_dual_tmp=np.dot(np.array(coupling_dual),Q)
+        lagrangean_dual_tmp=np.dot(np.array(coupling_dual),Q_modify)
         for i in range(num_homes):
             home_start_time = datetime.now()
             
