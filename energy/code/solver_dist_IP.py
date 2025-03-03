@@ -53,6 +53,8 @@ def train(inputs_dict):
     
     s_effect=inputs_dict['home_kwargs']['s_effect']
     flex_prob=inputs_dict['home_kwargs']['flex_prob']
+    pv_generation_per_home=inputs_dict['home_kwargs']['pv_generation']
+    mean_uncontrollable=inputs_dict['home_kwargs']['mean_uncontrollable']
     controlled_cost=inputs_dict['home_kwargs']['controlled_cost']
     num_homes=inputs_dict['ca_kwargs']['num_houses']
     horizon=inputs_dict['ca_kwargs']['horizon']
@@ -127,10 +129,30 @@ def train(inputs_dict):
         full_path_uncontrollable = os.path.join('./energy/data',inputs_dict['ca_kwargs']['uncontrollable_file'])
         uncontrollable_load = np.genfromtxt(full_path_uncontrollable, delimiter=',')
         Q_modify = Q_modify - uncontrollable_load
+    else:
+        if mean_uncontrollable == 0:
+            uncontrollable_load = np.zeros(horizon)
+        else:
+            uncontrollable_load = abs(rng.normal(mean_uncontrollable,0.02,size=horizon))
+        Q_modify = Q_modify - uncontrollable_load
     if inputs_dict['ca_kwargs']['renewable_file'] is not None:
         full_path_renewable = os.path.join('./energy/data',inputs_dict['ca_kwargs']['renewable_file'])
         renewable_load = np.genfromtxt(full_path_renewable, delimiter=',')
         Q_modify = Q_modify + renewable_load
+    else:
+        # select time indexes with PV generation from 6am to 6 pm
+        t = np.arange(24,72,1)
+        # parabola takes 0 at 24 and 72.
+        unscaled_power_generation = -(t**2) + 96*t - 1728
+    
+        # calculate a coefficient to scale unscaled_power_generation
+        scale_coef  = pv_generation_per_home / np.sum(unscaled_power_generation)
+        scaled_power_generation = unscaled_power_generation * scale_coef
+        
+        renewable_load = np.zeros(horizon)
+        renewable_load[24:72] = scaled_power_generation*num_homes
+        Q_modify = Q_modify + renewable_load
+        
     #Information Extractors from extreme points.
     
     #D_P is a matrix of which each row is D_P_(t+k)

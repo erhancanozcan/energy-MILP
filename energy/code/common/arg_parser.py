@@ -18,10 +18,12 @@ parser.add_argument('--save_file',help='save file name',type=str)
 
 
 #Home
-home_kwargs=['s_effect', 'flex_prob','controlled_cost']
+home_kwargs=['s_effect', 'flex_prob','controlled_cost','pv_generation', 'mean_uncontrollable']
 parser.add_argument('--s_effect',help='seasonal effect for HVAC 1 heating minus 1 cooling',type=int,default=-1)
 parser.add_argument('--flex_prob',help='flexibility probability for home',type=float,default=0.0)
 parser.add_argument('--controlled_cost',help='use the controlled deviation cost structure', action='store_true')
+parser.add_argument('--pv_generation',help='total pv generation per home during planning horizon. 0,5 and 20 might be good options',type=float,default=0.0)
+parser.add_argument('--mean_uncontrollable',help='mean for uncontrollable load per home during planning horizon. 0, 0.1, 0.2 might be good options',type=float,default=0.0)
 
 #Coordination Agent
 ca_kwargs=['num_houses', 'horizon', 'price', 'deviation_cost', 'Q','uncontrollable_file',
