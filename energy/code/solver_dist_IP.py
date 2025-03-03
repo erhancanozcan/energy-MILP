@@ -133,7 +133,7 @@ def train(inputs_dict):
         if mean_uncontrollable == 0:
             uncontrollable_load = np.zeros(horizon)
         else:
-            uncontrollable_load = abs(rng.normal(mean_uncontrollable,0.02,size=horizon))
+            uncontrollable_load = abs(rng.normal(mean_uncontrollable,0.02,size=horizon)) * num_homes
         Q_modify = Q_modify - uncontrollable_load
     if inputs_dict['ca_kwargs']['renewable_file'] is not None:
         full_path_renewable = os.path.join('./energy/data',inputs_dict['ca_kwargs']['renewable_file'])
