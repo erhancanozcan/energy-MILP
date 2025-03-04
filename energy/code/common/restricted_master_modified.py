@@ -105,7 +105,7 @@ class restricted_master:
                     
                 ### TO DO you may need to write this loop for an extreme ray!
                 
-                self.prob.addLConstr(LHS, '=', self.Q[k] - self.Q_modify[k], name="coupling_"+str(k))
+                self.prob.addLConstr(LHS, '=', self.Q[k] + self.Q_modify[k], name="coupling_"+str(k))
                 
                 self.prob.update()  
             
